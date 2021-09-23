@@ -39,16 +39,18 @@ from docopt import docopt
 from tqdm import tqdm
 from colorama import init, Fore
 import sys
-
-# uncomment lines below for os x < 11.0
 #reload(sys)
 #sys.setdefaultencoding("utf-8")
 
 
 init()
 
-API_KEY='INSERT YOUR API KEY'
-OMDB_URL = 'http://www.omdbapi.com/?apikey=' + API_KEY + '&?'
+API_KEY=None
+if not API_KEY:	
+	print("Fill in the API key in moviemon.py")
+	quit()
+
+OMDB_URL = 'http://www.omdbapi.com/?apikey=' + API_KEY + '&'
 
 EXT = (".3g2 .3gp .3gp2 .3gpp .60d .ajp .asf .asx .avchd .avi .bik .bix"
        ".box .cam .dat .divx .dmf .dv .dvr-ms .evo .flc .fli .flic .flv"
@@ -204,8 +206,7 @@ def util(docopt_args):
                                                        item["Genre"], item,
                                                        table)
             table_data.append([item["Title"], item["Genre"],
-                               item["imdbRating"], item["Runtime"],
-                               item["tomatoRating"], item["Year"]])
+                               item["imdbRating"], item["Runtime"]])
         sort_table(table_data, 0, False)
 
 
@@ -303,12 +304,12 @@ def get_movie_info(name):
     movie_info = guess_file_info(name)
     if movie_info['type'] == "movie":
         if 'year' in movie_info:
-            print(name + " " + str(movie_info.get('year')) + os.linesep)
+            #print(name + " " + str(movie_info.get('year')) + os.linesep)
             omdb_info = omdb(movie_info.get('title', name), movie_info.get('year', 0))
             print(omdb_info)
             return omdb_info
         else:
-            print(name + " " + os.linesep)
+            #print(name + " " + os.linesep)
             omdb_info = omdb(movie_info.get('title', name), None)
             print(omdb_info)
             return omdb_info
@@ -320,13 +321,13 @@ def omdb(title, year):
     """ Fetch data from OMDB API. """
     params = {'t': title.encode('ascii', 'ignore'),
               'plot': 'full',
-              'type': 'movie',
-              'tomatoes': 'true'}
+              'type': 'movie'}
 
     if year:
         params['y'] = year
 
     url = OMDB_URL + urlencode(params)
+    print(url)
     return json.loads(requests.get(url).text)
 
 if __name__ == '__main__':
