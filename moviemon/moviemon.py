@@ -29,7 +29,7 @@ import os
 import textwrap
 import requests
 import json
-from guessit import guessit
+from guessit import guess_file_info
 from terminaltables import AsciiTable
 try:
     from urllib.parse import urlencode
@@ -38,10 +38,17 @@ except:
 from docopt import docopt
 from tqdm import tqdm
 from colorama import init, Fore
+import sys
+
+# uncomment lines below for os x < 11.0
+#reload(sys)
+#sys.setdefaultencoding("utf-8")
+
 
 init()
 
-OMDB_URL = 'http://www.omdbapi.com/?'
+API_KEY='INSERT YOUR API KEY'
+OMDB_URL = 'http://www.omdbapi.com/?apikey=' + API_KEY + '&?'
 
 EXT = (".3g2 .3gp .3gp2 .3gpp .60d .ajp .asf .asx .avchd .avi .bik .bix"
        ".box .cam .dat .divx .dmf .dv .dvr-ms .evo .flc .fli .flic .flv"
@@ -54,7 +61,6 @@ EXT = (".3g2 .3gp .3gp2 .3gpp .60d .ajp .asf .asx .avchd .avi .bik .bix"
 EXT = tuple(EXT.split())
 
 CONFIG_PATH = os.path.expanduser("~/.moviemon")
-
 
 def main():
     args = docopt(__doc__, version='moviemon 1.0.11')
@@ -289,17 +295,23 @@ def scan_dir(path, dir_json):
                 if data is not None:
                     movie_not_found.append(name)
         with open(dir_json, "w") as out:
-            json.dump(movies, out, indent=2)
+            json.dump(movies, out, indent=2, ensure_ascii=False)
 
 
 def get_movie_info(name):
     """Find movie information"""
-    movie_info = guessit(name)
+    movie_info = guess_file_info(name)
     if movie_info['type'] == "movie":
         if 'year' in movie_info:
-            return omdb(movie_info['title'], movie_info['year'])
+            print(name + " " + str(movie_info.get('year')) + os.linesep)
+            omdb_info = omdb(movie_info.get('title', name), movie_info.get('year', 0))
+            print(omdb_info)
+            return omdb_info
         else:
-            return omdb(movie_info['title'], None)
+            print(name + " " + os.linesep)
+            omdb_info = omdb(movie_info.get('title', name), None)
+            print(omdb_info)
+            return omdb_info
     else:
         not_a_movie.append(name)
 
@@ -315,19 +327,7 @@ def omdb(title, year):
         params['y'] = year
 
     url = OMDB_URL + urlencode(params)
-    try:
-        r = requests.get(url)
-    except requests.exceptions.ConnectionError:
-        r.status_code = "Connection refused"
-    if r.status_code == 200:
-        if "application/json" in r.headers['content-type']:
-            return json.loads(r.text)
-        else:
-            print("Couldn't find the movie " + title)
-            return None
-    else:
-        print("There was some error fetching info from " + url)
-        return None
+    return json.loads(requests.get(url).text)
 
 if __name__ == '__main__':
     main()
